@@ -8,6 +8,8 @@ CREATE TABLE bronze_layer.crm_customer_info(
     customer_gender VARCHAR(50),
     customer_create_date DATE
 );
+
+
 -- ALTER TABLE bronze_layer.crm_customer_info
 -- DROP COLUMN customer_material_status;
 
@@ -30,9 +32,9 @@ CREATE TABLE bronze_layer.crm_sales_info(
     sales_order_number VARCHAR(50),
     sales_product_key VARCHAR(50),
     sales_customer_id INT,
-    sales_order_date DATE,
-    sales_shipping_date DATE,
-    sales_due_date DATE,
+    sales_order_date INT,
+    sales_shipping_date INT,
+    sales_due_date INT,
     sales_total_sales INT,
     sales_quantity INT,
     sales_price INT
@@ -58,3 +60,4 @@ CREATE TABLE bronze_layer.erb_category_glv2(
     sub_category VARCHAR(50),
     maintenance VARCHAR(50)
 );
+
