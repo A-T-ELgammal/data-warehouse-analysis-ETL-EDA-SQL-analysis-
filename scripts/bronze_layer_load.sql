@@ -133,15 +133,15 @@ $$;
 -- calling procedure 
 CALL bronze_layer.bronze_load();
 
---> Test
+> Test
 
--- --> crm_tables:
--- SELECT COUNT(*) FROM bronze_layer.crm_customer_info;
--- SELECT COUNT(*) FROM bronze_layer.crm_product_info;
--- SELECT COUNT(*) FROM bronze_layer.crm_sales_info;
+--> crm_tables:
+SELECT COUNT(*) FROM bronze_layer.crm_customer_info;
+SELECT COUNT(*) FROM bronze_layer.crm_product_info;
+SELECT COUNT(*) FROM bronze_layer.crm_sales_info;
 
 
--- --> erb_tables:
--- SELECT COUNT(*) FROM bronze_layer.erb_customer_az12;
--- SELECT COUNT(*) FROM bronze_layer.erb_category_glv2;
--- SELECT COUNT(*) FROM bronze_layer.erb_location_a101;
+--> erb_tables:
+SELECT COUNT(*) FROM bronze_layer.erb_customer_az12;
+SELECT COUNT(*) FROM bronze_layer.erb_category_glv2;
+SELECT COUNT(*) FROM bronze_layer.erb_location_a101;
