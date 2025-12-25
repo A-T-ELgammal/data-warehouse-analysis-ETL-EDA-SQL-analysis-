@@ -1,8 +1,3 @@
-CREATE PROCEDURE bronze_layer.bronze_load()
-LANGUAGE plpgsql
-AS $$
-BEGIN
-
 DROP TABLE IF EXISTS bronze_layer.crm_customer_info;
 CREATE TABLE bronze_layer.crm_customer_info(
     customer_id INT,
