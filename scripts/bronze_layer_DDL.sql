@@ -10,12 +10,6 @@ CREATE TABLE bronze_layer.crm_customer_info(
 );
 
 
--- ALTER TABLE bronze_layer.crm_customer_info
--- DROP COLUMN customer_material_status;
-
--- ALTER TABLE bronze_layer.crm_customer_info
--- ADD COLUMN customer_marital_status VARCHAR(50);
-
 DROP TABLE IF EXISTS bronze_layer.crm_product_info;
 CREATE TABLE bronze_layer.crm_product_info(
     product_id INT,
@@ -40,8 +34,8 @@ CREATE TABLE bronze_layer.crm_sales_info(
     sales_price INT
 );
 
-DROP TABLE IF EXISTS bronze_layer.erb_location_a101;
-CREATE TABLE bronze_layer.erb_location_a101(
+DROP TABLE IF EXISTS bronze_layer.erb_customer_az12;
+CREATE TABLE bronze_layer.erb_customer_az12(
     customer_id VARCHAR(50),
     birth_date DATE,
     gender VARCHAR(20)
@@ -60,6 +54,3 @@ CREATE TABLE bronze_layer.erb_category_glv2(
     sub_category VARCHAR(50),
     maintenance VARCHAR(50)
 );
-
-END;
-$$;
