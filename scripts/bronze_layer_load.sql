@@ -133,7 +133,7 @@ $$;
 -- calling procedure 
 CALL bronze_layer.bronze_load();
 
-> Test
+--> Test
 
 --> crm_tables:
 SELECT COUNT(*) FROM bronze_layer.crm_customer_info;
