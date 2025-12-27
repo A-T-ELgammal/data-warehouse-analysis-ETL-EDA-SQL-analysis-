@@ -19,7 +19,9 @@ CREATE TABLE silver_layer.crm_product_info(
     product_cost INT,
     product_line CHAR,
     product_start_date DATE,
-    product_end_date DATE
+    product_end_date DATE,
+    dwh_create_date TIMESTAMP DEFAULT NOW()
+
 );
 
 DROP TABLE IF EXISTS silver_layer.crm_sales_info;
@@ -32,20 +34,23 @@ CREATE TABLE silver_layer.crm_sales_info(
     sales_due_date INT,
     sales_total_sales INT,
     sales_quantity INT,
-    sales_price INT
+    sales_price INT,
+    dwh_create_date TIMESTAMP DEFAULT NOW()
 );
 
 DROP TABLE IF EXISTS silver_layer.erb_customer_az12;
 CREATE TABLE silver_layer.erb_customer_az12(
     customer_id VARCHAR(50),
     birth_date DATE,
-    gender VARCHAR(20)
+    gender VARCHAR(20),
+    dwh_create_date TIMESTAMP DEFAULT NOW()
 );
 
 DROP TABLE IF EXISTS silver_layer.erb_location_a101;
 CREATE TABLE silver_layer.erb_location_a101(
     customer_id VARCHAR(50),
-    country VARCHAR(50)
+    country VARCHAR(50),
+    dwh_create_date TIMESTAMP DEFAULT NOW()
 );
 
 DROP TABLE IF EXISTS silver_layer.erb_category_glv2;
@@ -53,6 +58,6 @@ CREATE TABLE silver_layer.erb_category_glv2(
     category_id VARCHAR(50),
     category VARCHAR(50),
     sub_category VARCHAR(50),
-    maintenance VARCHAR(50)
+    maintenance VARCHAR(50),
+    dwh_create_date TIMESTAMP DEFAULT NOW()
 );
-DROP TABLE silver_layer.dumn;
