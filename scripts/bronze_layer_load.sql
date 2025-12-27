@@ -143,12 +143,14 @@ CALL bronze_layer.bronze_load();
 --> Test
 
 --> crm_tables:
-SELECT COUNT(*) FROM bronze_layer.crm_customer_info;
-SELECT COUNT(*) FROM bronze_layer.crm_product_info;
-SELECT COUNT(*) FROM bronze_layer.crm_sales_info;
+SELECT * FROM bronze_layer.crm_customer_info LIMIT 10;
+SELECT * FROM bronze_layer.erb_customer_az12 LIMIT 10;
+SELECT * FROM bronze_layer.erb_location_a101 LIMIT 10;
+
+
 
 
 --> erb_tables:
-SELECT COUNT(*) FROM bronze_layer.erb_customer_az12;
-SELECT COUNT(*) FROM bronze_layer.erb_category_glv2;
-SELECT COUNT(*) FROM bronze_layer.erb_location_a101;
+SELECT * FROM bronze_layer.crm_sales_info LIMIT 10;
+SELECT * FROM bronze_layer.crm_product_info LIMIT 10;
+SELECT * FROM bronze_layer.erb_category_glv2 LIMIT 100;
