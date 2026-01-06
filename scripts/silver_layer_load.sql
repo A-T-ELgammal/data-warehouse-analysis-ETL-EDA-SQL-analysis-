@@ -95,3 +95,50 @@ END AS product_line,
 product_start_date ,
 LEAD(product_start_date) OVER (PARTITION BY product_key ORDER BY product_end_date)-1  AS product_end_date
 FROM bronze_layer.crm_product_info
+----------------------------------------------
+--> cleaning and inserting crm sales table
+TRUNCATE TABLE silver_layer.crm_sales_info;
+INSERT INTO silver_layer.crm_sales_info(
+       sales_order_number,
+       sales_product_key,
+       sales_customer_id,
+       sales_order_date,
+       sales_shipping_date,
+       sales_due_date,
+       sales_total_sales,
+       sales_quantity,
+       sales_price
+)
+SELECT 
+sales_order_number,
+sales_product_key,
+sales_customer_id,
+-- NULLIF(sales_order_date, 0) AS sales_order_date,
+CASE   WHEN sales_order_date = 0 THEN NULL
+       WHEN LENGTH(CAST(sales_order_date AS VARCHAR)) != 8 THEN NULL
+       ELSE CAST(CAST(sales_order_date AS VARCHAR) AS DATE)
+       END AS sales_order_date, 
+       
+CASE   WHEN sales_shipping_date = 0 THEN NULL
+       WHEN LENGTH(CAST(sales_shipping_date AS VARCHAR)) != 8 THEN NULL
+       ELSE CAST(CAST(sales_shipping_date AS VARCHAR) AS DATE)
+       END AS sales_shipping_date,
+
+CASE   WHEN sales_due_date = 0 THEN NULL
+       WHEN LENGTH(CAST(sales_due_date AS VARCHAR)) != 8 THEN NULL
+       ELSE CAST(CAST(sales_due_date AS VARCHAR) AS DATE)
+       END AS sales_due_date,
+-- Recalculate sales if original value is missing or incorrect
+CASE   WHEN sales_total_sales IS NULL OR sales_total_sales <= 0 
+              OR sales_total_sales != sales_quantity * ABS(sales_price) 
+              THEN sales_quantity * ABS(sales_price)
+       ELSE sales_total_sales
+       END AS sales_total_sales,
+sales_quantity,
+---- Derive price if original value is invalid
+CASE WHEN sales_price IS NULL OR sales_price <= 0 
+       THEN sales_total_sales / COALESCE(sales_quantity, 0)
+       ELSE sales_price
+       END AS sales_price
+       
+FROM bronze_layer.crm_sales_info
