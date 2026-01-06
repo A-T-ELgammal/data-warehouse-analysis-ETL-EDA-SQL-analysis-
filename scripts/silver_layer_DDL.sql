@@ -13,11 +13,12 @@ CREATE TABLE silver_layer.crm_customer_info(
 
 DROP TABLE IF EXISTS silver_layer.crm_product_info;
 CREATE TABLE silver_layer.crm_product_info(
-    product_id INT,
+    product_id VARCHAR(30),
+    category_id VARCHAR(50),
     product_key VARCHAR(50),
     product_name VARCHAR(50),
     product_cost INT,
-    product_line CHAR,
+    product_line VARCHAR(30),
     product_start_date DATE,
     product_end_date DATE,
     dwh_create_date TIMESTAMP DEFAULT NOW()

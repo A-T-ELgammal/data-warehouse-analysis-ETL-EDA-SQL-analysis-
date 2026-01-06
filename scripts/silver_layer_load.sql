@@ -64,3 +64,34 @@ FROM latest_customer_update WHERE updated_state = 1;
 
 SELECT * FROM silver_layer.crm_customer_info;
 -------------------------------------------------------------
+
+--> crm product_info cleaning and inserting to silver layer 
+TRUNCATE TABLE silver_layer.crm_product_info;
+INSERT INTO silver_layer.crm_product_info(
+    product_id ,
+    category_id,
+    product_key,
+    product_name,
+    product_cost,
+    product_line,
+    product_start_date ,
+    product_end_date
+)
+
+--> final query for crm product info table 
+SELECT 
+product_id,
+REPLACE(SUBSTRING(product_key, 1,5),'-','_') AS category_id,
+REPLACE(SUBSTRING(product_key, 7, LENGTH(product_key)), '_', '-') AS product_key,
+product_name,
+COALESCE(product_cost, 0) AS product_cost,
+CASE UPPER(TRIM(product_line))  
+       WHEN 'S' THEN 'other Sales'
+       WHEN 'T' THEN 'Touring'
+       WHEN 'M' THEN 'Mountain'
+       WHEN 'R' THEN 'Road'
+       ELSE 'Unkown'
+END AS product_line,
+product_start_date ,
+LEAD(product_start_date) OVER (PARTITION BY product_key ORDER BY product_end_date)-1  AS product_end_date
+FROM bronze_layer.crm_product_info
