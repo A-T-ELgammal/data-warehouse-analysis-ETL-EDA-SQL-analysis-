@@ -1,3 +1,32 @@
+
+--> cleaning the crm_customer_info table --- checking with no results
+
+SELECT customer_id, COUNT(*) 
+FROM silver_layer.crm_customer_info
+GROUP BY customer_id
+HAVING COUNT(*) > 1;
+
+
+ALTER TABLE bronze_layer.crm_customer_info 
+RENAME COLUMN customer_material_status TO customer_marital_status;
+
+ALTER TABLE silver_layer.crm_customer_info 
+RENAME COLUMN customer_material_status TO customer_marital_status;
+
+SELECT DISTINCT customer_marital_status
+FROM silver_layer.crm_customer_info
+
+SELECT * 
+FROM silver_layer.crm_customer_info
+WHERE customer_id = 29466;
+--> selecting just latest update of customer info 
+SELECT * 
+FROM(
+SELECT *
+, RANK() OVER (PARTITION BY customer_id ORDER BY customer_create_date DESC) AS updated_state
+FROM bronze_layer.crm_customer_info
+)AS ranked_customers WHERE updated_state = 1;
+
 --------------------->>>> Silver layer <<<<<<<---------------------------
 --> checking without result queries
 SELECT COUNT(* )
