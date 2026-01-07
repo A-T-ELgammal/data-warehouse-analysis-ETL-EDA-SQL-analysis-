@@ -170,7 +170,11 @@ FROM bronze_layer.erb_customer_az12
 
 ----------------------------------------------
 --> cleaning ans inserting erb_location_a101
-
+TRUNCATE TABLE silver_layer.erb_location_a101;
+INSERT INTO silver_layer.erb_location_a101(
+       customer_id,
+       country
+)
 SELECT REGEXP_REPLACE((TRIM(customer_id)), '-','') AS customer_id,
 
 CASE   WHEN country IN ('US', 'USA', 'United States') THEN 'USA'
@@ -178,3 +182,5 @@ CASE   WHEN country IN ('US', 'USA', 'United States') THEN 'USA'
        ELSE country
 END AS country
 FROM bronze_layer.erb_location_a101;
+--------------------------------------------
+--> cleaning and inserting erb_category_glv2
