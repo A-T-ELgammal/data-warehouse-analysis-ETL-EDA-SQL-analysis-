@@ -184,3 +184,12 @@ END AS country
 FROM bronze_layer.erb_location_a101;
 --------------------------------------------
 --> cleaning and inserting erb_category_glv2
+TRUNCATE TABLE silver_layer.erb_category_glv2;
+INSERT INTO silver_layer.erb_category_glv2
+(
+       category_id,
+       category,
+       sub_category,
+       maintenance
+)
+SELECT * FROM bronze_layer.erb_category_glv2

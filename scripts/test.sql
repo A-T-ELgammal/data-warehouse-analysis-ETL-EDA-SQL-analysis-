@@ -136,3 +136,22 @@ END AS country
 
 FROM bronze_layer.erb_location_a101;
 
+------------------------------------------
+-- category glv2
+SELECT * FROM bronze_layer.erb_category_glv2
+--category_id
+SELECT * 
+FROM bronze_layer.erb_category_glv2
+WHERE category_id NOT IN (SELECT category_id FROM silver_layer.crm_product_info)
+--category
+SELECT DISTINCT category
+FROM bronze_layer.erb_category_glv2
+-- WHERE TRIM(category) != category
+--subcategory
+SELECT DISTINCT sub_category
+FROM bronze_layer.erb_category_glv2
+--
+-- maintainance 
+SELECT DISTINCT maintenance
+FROM bronze_layer.erb_category_glv2
+---------------------------------------------
