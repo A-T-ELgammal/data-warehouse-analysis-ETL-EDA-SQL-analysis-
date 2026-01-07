@@ -119,3 +119,20 @@ END AS gender
 FROM bronze_layer.erb_customer_az12
  ------------------------------------------------------------
  -- erb_location_az12
+SELECT * FROM bronze_layer.erb_location_a101
+
+SELECT REGEXP_REPLACE((TRIM(customer_id)), '-','') AS customer_id
+FROM bronze_layer.erb_location_a101
+WHERE REGEXP_REPLACE((TRIM(customer_id)), '-','') NOT IN (SELECT customer_id FROM silver_layer.erb_customer_az12)
+
+SELECT DISTINCT country
+FROM bronze_layer.erb_location_a101
+-- WHERE TRIM(country) != country
+
+CASE   WHEN country IN ('US', 'USA', 'United States') THEN 'USA'
+       WHEN country = 'DE' THEN 'Germany'
+       ELSE country
+END AS country
+
+FROM bronze_layer.erb_location_a101;
+
