@@ -142,3 +142,33 @@ CASE WHEN sales_price IS NULL OR sales_price <= 0
        END AS sales_price
        
 FROM bronze_layer.crm_sales_info
+----------------------------------------------
+--> cleaning and inserting erb_ customer_az12
+TRUNCATE silver_layer.erb_customer_az12;
+INSERT INTO silver_layer.erb_customer_az12(
+       customer_id,
+       birth_date,
+       gender
+)
+
+select
+CASE   WHEN customer_id ~ '^NAS' THEN SUBSTRING((TRIM(customer_id)),4, LENGTH((TRIM(customer_id))))
+       ELSE customer_id
+END AS customer_id,
+
+CASE WHEN birth_date > CURRENT_DATE 
+       THEN NULL
+       ELSE birth_date
+END AS birth_date,
+
+CASE WHEN TRIM(gender) = 'M' THEN 'Male'
+    WHEN TRIM (gender) = 'F' THEN 'Female'
+    ELSE TRIM(gender)
+END AS gender
+
+FROM bronze_layer.erb_customer_az12
+
+----------------------------------------------
+--> cleaning ans inserting erb_location_a101
+SELECT REGEXP_REPLACE((TRIM(customer_id)), '-','')
+FROM bronze_layer.erb_location_a101;

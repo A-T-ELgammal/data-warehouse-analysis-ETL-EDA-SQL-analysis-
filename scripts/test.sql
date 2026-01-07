@@ -79,3 +79,43 @@ CASE   WHEN sales_shipping_date = 0 THEN NULL
 SELECT sales_order_date, sales_due_date
 FROM silver_layer.crm_sales_info
 WHERE sales_order_date > sales_due_date OR sales_order_date > sales_shipping_date
+
+SELECT customer_key FROM bronze_layer.crm_customer_info;
+SELECT customer_id FROM bronze_layer.erb_customer_az12;
+
+----------------------------------------------------------------
+-- erb_customer_az12
+ SELECT * FROM bronze_layer.erb_customer_az12
+
+ -- customer_id
+ SELECT 
+ CASE   WHEN customer_id ~ '^NAS' THEN SUBSTRING((TRIM(customer_id)),4, LENGTH((TRIM(customer_id))))
+ END AS customer_id
+ FROM bronze_layer.erb_customer_az12
+ WHERE CASE   WHEN customer_id ~ '^NAS' THEN SUBSTRING((TRIM(customer_id)),4, LENGTH((TRIM(customer_id))))
+ END AS customer_id NOT IN ((SELECT customer_key FROM bronze_layer.crm_customer_info))
+ 
+  -- check for join with crm_customer_info
+SELECT customer_id FROM bronze_layer.erb_customer_az12
+WHERE( CASE   WHEN customer_id ~ '^NAS' THEN SUBSTRING((TRIM(customer_id)),4, LENGTH((TRIM(customer_id))))
+ END ) NOT IN ((SELECT customer_key FROM bronze_layer.crm_customer_info))
+
+ -- birth_date
+SELECT birth_date
+FROM bronze_layer.erb_customer_az12
+ORDER BY birth_date DESC
+WHERE birth_date > CURRENT_DATE;
+
+-- gender 
+SELECT DISTINCT gender
+FROM bronze_layer.erb_customer_az12
+WHERE TRIM(gender) != gender
+
+SELECT DISTINCT
+CASE WHEN TRIM(gender) = 'M' THEN 'Male'
+    WHEN TRIM (gender) = 'F' THEN 'Female'
+    ELSE TRIM(gender)
+END AS gender
+FROM bronze_layer.erb_customer_az12
+ ------------------------------------------------------------
+ -- erb_location_az12
