@@ -184,3 +184,5 @@ FROM bronze_layer.erb_category_glv2
 SELECT DISTINCT maintenance
 FROM bronze_layer.erb_category_glv2
 ---------------------------------------------
+SELECT COUNT(DISTINCT country)
+FROM silver_layer.erb_location_a101
