@@ -33,3 +33,25 @@ ON crm_ci.customer_key = erb_caz12.customer_id
 LEFT JOIN silver_layer.erb_location_a101 erb_loc
 ON crm_ci.customer_key = erb_loc.customer_id
 
+--- crm product info table 
+
+--- crm product info table 
+CREATE VIEW gold_layer.dim_product_info AS 
+SELECT 
+ROW_NUMBER() OVER (ORDER BY crm_pi.product_id) AS product_key,
+crm_pi.product_id,
+crm_pi.product_name,
+crm_pi.product_cost,
+crm_pi.product_line,
+crm_pi.category_id,
+erb_cat.category,
+erb_cat.sub_category,
+crm_pi.product_key AS product_serial,
+crm_pi.product_start_date,
+crm_pi.product_end_date,
+erb_cat.maintenance
+FROM silver_layer.crm_product_info crm_pi
+LEFT JOIN silver_layer.erb_category_glv2 erb_cat
+ON crm_pi.category_id = erb_cat.category_id
+
+WHERE product_end_date IS NOT NULL
