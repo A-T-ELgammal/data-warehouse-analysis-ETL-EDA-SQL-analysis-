@@ -186,3 +186,124 @@ FROM bronze_layer.erb_category_glv2
 ---------------------------------------------
 SELECT COUNT(DISTINCT country)
 FROM silver_layer.erb_location_a101
+
+-------------------------- Gold Layer ----------------------------------
+-- check for duplicates after joining by master table primary key 
+
+SELECT customer_id, COUNT(*)
+FROM (SELECT 
+crm_ci.customer_id,
+crm_ci.customer_key,
+crm_ci.customer_first_name,
+crm_ci.customer_last_name,
+crm_ci.customer_marital_status,
+crm_ci.customer_create_date,
+erb_caz12.birth_date,
+erb_caz12.gender,
+erb_loc.country
+FROM silver_layer.crm_customer_info AS crm_ci
+LEFT JOIN silver_layer.erb_customer_az12 AS erb_caz12 
+ON crm_ci.customer_key = erb_caz12.customer_id
+LEFT JOIN silver_layer.erb_location_a101 erb_loc
+ON crm_ci.customer_key = erb_loc.customer_id
+) AS temp
+GROUP BY customer_id
+HAVING COUNT(*) > 1;
+
+-- deleting 4 rows with all null in all fields excepts customer_key 
+DELETE FROM silver_layer.crm_customer_info
+WHERE customer_key IN ('A01Ass', 'PO25', '13451235', 'SF566')
+
+select * FROM silver_layer.crm_customer_info
+
+-- checking for null and difference in gender for joining crm_customer_info and erb_customer_az12
+
+SELECT 
+crm_ci.customer_gender,
+erb_caz12.gender
+-- COUNT(*)
+FROM silver_layer.crm_customer_info AS crm_ci
+LEFT JOIN silver_layer.erb_customer_az12 AS erb_caz12 
+ON crm_ci.customer_key = erb_caz12.customer_id
+LEFT JOIN silver_layer.erb_location_a101 erb_loc
+ON crm_ci.customer_key = erb_loc.customer_id
+ORDER BY 1,2
+-- 4569 total unknown values in customer info
+
+-- WHERE crm_ci.customer_gender != erb_caz12.gender
+WHERE crm_ci.customer_gender = 'Unknown';
+
+-- 1472 total null values in gender
+SELECT COUNT(*) FROM silver_layer.erb_customer_az12
+WHERE gender IS NULL
+
+-- checking missing date after refinement of joininig data 
+SELECT COUNT(*)
+FROM
+(SELECT 
+crm_ci.customer_id,
+crm_ci.customer_key,
+crm_ci.customer_first_name,
+crm_ci.customer_last_name,
+crm_ci.customer_marital_status,
+        -- trust crm customer gender if differrnce appears 
+CASE    WHEN crm_ci.customer_gender != 'Unknown' AND erb_caz12.gender IS NOT NULL
+        AND crm_ci.customer_gender != erb_caz12.gender THEN crm_ci.customer_gender
+        -- trust crm customer gender if erb gender null
+        WHEN erb_caz12.gender IS NULL AND crm_ci.customer_gender != 'Unknown'
+        THEN crm_ci.customer_gender
+        
+        WHEN crm_ci.customer_gender = 'Unknown' AND erb_caz12.gender IS NOT NULL 
+        THEN erb_caz12.gender
+
+        ELSE crm_ci.customer_gender
+END AS customer_gender,
+crm_ci.customer_create_date,
+erb_caz12.birth_date,
+erb_loc.country
+FROM silver_layer.crm_customer_info AS crm_ci
+LEFT JOIN silver_layer.erb_customer_az12 AS erb_caz12 
+ON crm_ci.customer_key = erb_caz12.customer_id
+LEFT JOIN silver_layer.erb_location_a101 erb_loc
+ON crm_ci.customer_key = erb_loc.customer_id
+) AS temp
+WHERE customer_gender = 'Unknown'
+
+-- another check for the refined one 
+SELECT COUNT(customer_gender)
+FROM
+(SELECT 
+crm_ci.customer_id,
+crm_ci.customer_key,
+crm_ci.customer_first_name,
+crm_ci.customer_last_name,
+crm_ci.customer_marital_status,
+        -- trust crm customer gender if differrnce appears 
+-- CASE    WHEN crm_ci.customer_gender != 'Unknown' AND erb_caz12.gender IS NOT NULL
+--         AND crm_ci.customer_gender != erb_caz12.gender THEN crm_ci.customer_gender
+--         -- trust crm customer gender if erb gender null
+--         WHEN erb_caz12.gender IS NULL AND crm_ci.customer_gender != 'Unknown'
+--         THEN crm_ci.customer_gender
+        
+--         WHEN crm_ci.customer_gender = 'Unknown' AND erb_caz12.gender IS NOT NULL 
+--         THEN erb_caz12.gender
+
+--         ELSE crm_ci.customer_gender
+        -- same with more simplicity and clean
+CASE    WHEN crm_ci.customer_gender != 'Unknown' THEN crm_ci.customer_gender
+        ELSE COALESCE(erb_caz12.gender, 'Unknown')
+END AS customer_gender,
+crm_ci.customer_create_date,
+erb_caz12.birth_date,
+erb_loc.country
+FROM silver_layer.crm_customer_info AS crm_ci
+LEFT JOIN silver_layer.erb_customer_az12 AS erb_caz12 
+ON crm_ci.customer_key = erb_caz12.customer_id
+LEFT JOIN silver_layer.erb_location_a101 erb_loc
+ON crm_ci.customer_key = erb_loc.customer_id
+) AS temp
+WHERE customer_gender = 'Unknown';
+
+--- checking the customer info view
+SELECT * FROM gold_layer.dim_customer_info
+SELECT DISTINCT customer_gender FROM gold_layer.dim_customer_info

@@ -1,10 +1,10 @@
 DROP TABLE IF EXISTS silver_layer.crm_customer_info;
 CREATE TABLE silver_layer.crm_customer_info(
-    customer_id INT,
+    customer_id VARCHAR(30),
     customer_key VARCHAR(50),
     customer_first_name VARCHAR(50),
     customer_last_name VARCHAR(50),
-    customer_material_status VARCHAR(50),
+    customer_marital_status VARCHAR(50),
     customer_gender VARCHAR(50),
     customer_create_date DATE,
     dwh_create_date TIMESTAMP DEFAULT NOW()
