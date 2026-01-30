@@ -1,21 +1,22 @@
 
-CREATE VIEW gold_layer.dim_customer_info AS 
-
+DROP VIEW IF EXISTS gold_layer.dim_product_info;
+CREATE VIEW gold_layer.dim_product_info AS 
 SELECT 
--- add surrogate key
-ROW_NUMBER() OVER (ORDER BY crm_ci.customer_id) AS customer_key,
-crm_ci.customer_id AS customer_id,
-crm_ci.customer_key AS customer_number,
-crm_ci.customer_first_name AS first_name,
-crm_ci.customer_last_name AS last_name,
-crm_ci.customer_marital_status AS marital_status,
-        -- trust crm customer gender if differrnce appears 
--- CASE    WHEN crm_ci.customer_gender != 'Unknown' AND erb_caz12.gender IS NOT NULL
---         AND crm_ci.customer_gender != erb_caz12.gender THEN crm_ci.customer_gender
---         -- trust crm customer gender if erb gender null
---         WHEN erb_caz12.gender IS NULL AND crm_ci.customer_gender != 'Unknown'
---         THEN crm_ci.customer_gender
-        
+ROW_NUMBER() OVER (ORDER BY crm_pi.product_id) AS product_key,
+crm_pi.product_id,
+crm_pi.product_name,
+crm_pi.product_cost,
+crm_pi.product_line,
+crm_pi.category_id,
+erb_cat.category,
+erb_cat.sub_category,
+crm_pi.product_key AS product_serial,
+crm_pi.product_start_date,
+crm_pi.product_end_date,
+erb_cat.maintenance
+FROM silver_layer.crm_product_info crm_pi
+LEFT JOIN silver_layer.erb_category_glv2 erb_cat
+ON crm_pi.category_id = erb_cat.category_id;
 --         WHEN crm_ci.customer_gender = 'Unknown' AND erb_caz12.gender IS NOT NULL 
 --         THEN erb_caz12.gender
 
@@ -36,8 +37,10 @@ ON crm_ci.customer_key = erb_loc.customer_id
 --- crm product info table 
 
 --- crm product info table 
+DROP VIEW IF EXISTS gold_layer.dim_product_info;
 CREATE VIEW gold_layer.dim_product_info AS 
 SELECT 
+-- surrogate_key
 ROW_NUMBER() OVER (ORDER BY crm_pi.product_id) AS product_key,
 crm_pi.product_id,
 crm_pi.product_name,
@@ -54,4 +57,26 @@ FROM silver_layer.crm_product_info crm_pi
 LEFT JOIN silver_layer.erb_category_glv2 erb_cat
 ON crm_pi.category_id = erb_cat.category_id
 
-WHERE product_end_date IS NOT NULL
+
+
+---------------------------------------------
+---------crm_ sales_ info--------------------
+DROP VIEW IF EXISTS gold_layer.fact_sales_info;
+CREATE VIEW gold_layer.fact_sales_info AS  
+SELECT 
+sls.sales_order_number AS order_number,
+pr.product_key AS product_key,
+ci.customer_key AS customer_key,        
+sls.sales_order_date AS order_date,
+sls.sales_shipping_date AS shipping_date,
+sls.sales_due_date AS due_date,
+sls.sales_total_sales AS total_sales,
+sls.sales_quantity AS quantity,
+sls.sales_price AS price
+FROM silver_layer.crm_sales_info sls
+LEFT JOIN gold_layer.dim_product_info pr
+ON sls.sales_product_key = CAST(pr.product_serial AS VARCHAR(50))
+LEFT JOIN gold_layer.dim_customer_info ci 
+ON CAST(sls.sales_customer_id AS VARCHAR(50)) = ci.customer_id
+
+

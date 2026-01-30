@@ -307,3 +307,34 @@ WHERE customer_gender = 'Unknown';
 --- checking the customer info view
 SELECT * FROM gold_layer.dim_customer_info
 SELECT DISTINCT customer_gender FROM gold_layer.dim_customer_info
+
+--- fact (sales_info)
+
+SELECT * FROM gold_layer.fact_sales_info;
+
+SELECT COUNT(*)
+FROM gold_layer.fact_sales_info gld_fsls
+LEFT JOIN gold_layer.dim_customer_info dim_ci
+ON dim_ci.customer_key = gld_fsls.customer_key 
+LEFT JOIN gold_layer.dim_product_info dim_pi
+ON dim_pi.product_serial = gld_fsls.product_serial 
+
+WHERE   dim_pi.product_key IS NULL
+
+
+
+SELECT * FROM  gold_layer.fact_sales_info;
+SELECT * FROM gold_layer.fact_sales_info WHERE product_key = 20;
+
+SELECT * FROM gold_layer.fact_sales_info sls
+LEFT JOIN gold_layer.dim_customer_info ci
+ON sls.customer_key = ci.customer_key
+WHERE ci.customer_key IS NULL 
+
+
+SELECT * 
+FROM gold_layer.fact_sales_info sls
+LEFT JOIN gold_layer.dim_product_info pr
+ON sls.product_key = pr.product_key
+WHERE sls.product_key IS NULL 
+
