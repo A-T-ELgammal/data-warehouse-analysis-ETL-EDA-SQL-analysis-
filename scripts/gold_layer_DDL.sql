@@ -20,8 +20,11 @@ crm_ci.customer_marital_status AS marital_status,
 
 --         ELSE crm_ci.customer_gender
         -- same with more simplicity and clean
-CASE    WHEN crm_ci.customer_gender != 'Unknown' THEN crm_ci.customer_gender
-        ELSE COALESCE(erb_caz12.gender, 'Unknown')
+CASE    WHEN crm_ci.customer_gender != 'Unknown' AND
+        TRIM(crm_ci.customer_gender) != '' 
+        AND crm_ci.customer_gender IS NOT NULL
+        THEN crm_ci.customer_gender
+        ELSE COALESCE((NULLIF(TRIM(crm_ci.customer_gender), '')), 'Unknown')
 END AS customer_gender,
 crm_ci.customer_create_date AS customer_create_date,
 erb_caz12.birth_date As customer_birth_date,
