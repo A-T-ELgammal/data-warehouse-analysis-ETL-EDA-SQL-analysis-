@@ -36,14 +36,33 @@ FROM gold_layer.dim_customer_info
 -------------------------------------------------------
 -- measure exploration
 
-SELECT * FROM gold_layer.fact_sales_info
+SELECT 'total_orders', COUNT(DISTINCT order_number)
+FROM gold_layer.fact_sales_info
+UNION ALL
 
-SELECT
-COUNT(DISTINCT order_number) AS total_orders,
-COUNT(DISTINCT customer_key) AS total_customer_place,
-COUNT(DISTINCT product_key) AS total_store_products,
-SUM(total_sales) AS sum_of_total_sales,
-ROUND(AVG(total_sales), 2) AS average_sales,
-SUM(quantity) AS total_sold_products,
-ROUND(AvG(price), 2) AS product_average_price
+SELECT 'total store customers', COUNT(DISTINCT customer_id)
+FROM gold_layer.dim_customer_info
+UNION ALL 
+
+SELECT 'total customer who placed orders', COUNT(DISTINCT customer_key)
+FROM gold_layer.fact_sales_info
+UNION ALL
+
+SELECT 'total store products', COUNT(DISTINCT product_key)
+FROM gold_layer.fact_sales_info
+UNION ALL
+
+SELECT 'sum of total sales', SUM(total_sales)
+FROM gold_layer.fact_sales_info
+UNION ALL
+
+SELECT 'average sales', ROUND(AVG(total_sales), 2)
+FROM gold_layer.fact_sales_info
+UNION ALL
+
+SELECT 'total sold products', SUM(quantity)
+FROM gold_layer.fact_sales_info
+UNION ALL
+
+SELECT 'product average price', ROUND(AvG(price), 2) 
 FROM gold_layer.fact_sales_info
