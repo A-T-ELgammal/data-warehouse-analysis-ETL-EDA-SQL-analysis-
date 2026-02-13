@@ -79,3 +79,77 @@ ORDER BY customer_country ASC;
 SELECT customer_gender, COUNT(customer_key) AS total_customers 
 FROM gold_layer.dim_customer_info
 GROUP BY customer_gender;
+
+SELECT category, COUNT(product_key) AS total_products
+FROM gold_layer.dim_product_info
+WHERE category IS NOT NULL
+GROUP BY category;
+
+SELECT category, ROUND(AVG(product_cost), 2) AS average_price
+FROM gold_layer.dim_product_info
+WHERE category IS NOT NULL
+GROUP BY category;
+
+-- total revenue by customers 
+SELECT 
+    ci.customer_key,
+    ci.first_name,
+    ci.last_name,
+    SUM(sls.total_sales) AS total_revenue
+FROM gold_layer.fact_sales_info AS sls
+LEFT JOIN gold_layer.dim_customer_info ci
+ON sls.customer_key = ci.customer_key
+GROUP BY
+    ci.first_name,
+    ci.last_name,
+    ci.customer_key
+ORDER BY total_revenue DESC;    
+
+-- sold items across the countries 
+
+SELECT
+    ci.customer_country AS country,
+    COUNT(sls.product_key) AS total_products
+FROM gold_layer.fact_sales_info AS sls
+LEFT JOIN gold_layer.dim_customer_info AS ci
+ON sls.customer_key = ci.customer_key
+GROUP BY country
+ORDER BY total_products DESC;
+
+-----------------------------------------------------------------------
+
+--------- ranking analysis-------------------------
+
+-- top 5 prouducts with highest revenue
+SELECT
+    pi.product_name,
+    SUM(sls.total_sales) AS total_revenue
+    , ROW_NUMBER() OVER (ORDER BY SUM(sls.total_sales) DESC) AS product_ranking
+
+FROM gold_layer.fact_sales_info AS sls
+LEFT JOIN gold_layer.dim_product_info AS pi 
+ON sls.product_key = pi.product_key
+GROUP BY pi.product_name
+ORDER BY total_revenue DESC
+-- for the worst- performing products 
+-- ORDER BY total_revenue ASC
+LIMIT 5;
+
+-- top 3 customers with fewest and most orders placed 
+SELECT
+    ci.first_name,
+    ci.last_name,
+    sls.customer_key,
+    COUNT(DISTINCT sls.order_number) AS total_orders
+    -- ROW_NUMBER() OVER (ORDER BY COUNT(DISTINCT sls.order_number) ASC) AS ordered_placed_ranking
+FROM gold_layer.fact_sales_info AS sls
+LEFT JOIN gold_layer.dim_customer_info AS ci
+ON sls.customer_key = ci.customer_key
+GROUP BY 
+    ci.first_name,
+    ci.last_name,
+    sls.customer_key
+ORDER BY total_orders, first_name ASC -- fewest
+-- ORDER BY total_orders DESC -- most
+LIMIT 3;
+
