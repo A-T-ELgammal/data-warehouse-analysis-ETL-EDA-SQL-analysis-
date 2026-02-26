@@ -153,3 +153,43 @@ ORDER BY total_orders, first_name ASC -- fewest
 -- ORDER BY total_orders DESC -- most
 LIMIT 3;
 
+========================================================================================
+
+-- trends (measures) by date of dimensions
+-- sales over time:
+SELECT 
+    order_date,
+    total_sales
+FROM gold_layer.fact_sales_info
+WHERE total_sales IS NOT NULL
+ORDER BY order_date
+
+-- by year - total sales, total customers, total quantities
+SELECT 
+    EXTRACT(YEAR FROM order_date) AS order_year,
+    EXTRACT (MONTH FROM order_date) AS order_month,
+    COUNT(DISTINCT customer_key) AS customers,
+    SUM(quantity) AS total_quantities,
+    SUM (total_sales) AS total_sales
+FROM gold_layer.fact_sales_info
+WHERE total_sales IS NOT NULL
+GROUP BY order_year, order_month
+ORDER BY order_year, order_month
+
+--------------------------
+-- cummulative analysis 
+-- sales by month accumlatively 
+
+SELECT 
+    order_month,
+    total_sales,
+    SUM (total_sales) OVER (ORDER BY order_month) AS running_total_sales
+FROM 
+    (SELECT 
+        EXTRACT(MONTH FROM order_date) AS order_month,
+        SUM(total_sales) AS total_sales
+    FROM gold_layer.fact_sales_info
+    WHERE total_sales IS NOT NULL AND order_date IS NOT NULL
+    GROUP BY order_month
+    ORDER BY order_month
+    ) AS monthly_total_sales
