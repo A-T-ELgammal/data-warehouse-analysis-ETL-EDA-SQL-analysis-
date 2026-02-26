@@ -193,3 +193,37 @@ FROM
     GROUP BY order_month
     ORDER BY order_month
     ) AS monthly_total_sales
+
+
+-----------------------------------
+
+-- performancce analysis 
+-- year-over-year-analysis
+WITH yearly_product_sales AS 
+(SELECT
+    EXTRACT(YEAR FROM sls.order_date) AS order_year,
+    pi.product_name,
+    SUM (sls.total_sales) AS current_sales,
+    ROUND(AVG(SUM(sls.total_sales)) OVER (PARTITION BY product_name), 2) AS avg_sales
+FROM gold_layer.fact_sales_info AS sls
+LEFT JOIN gold_layer.dim_product_info AS pi
+ON sls.product_key = pi.product_key 
+WHERE sls.order_date IS NOT NULL
+GROUP BY order_year, pi.product_name)
+
+SELECT 
+    order_year,
+    product_name,
+    current_sales,
+    CASE WHEN (current_sales - avg_sales) > 0 THEN 'ABOVE AVERAGE'
+         WHEN (current_sales - avg_sales) < 0 THEN 'BELOW AVERAGE'
+    END AS AVG_change,
+    LAG(current_sales) OVER (PARTITION BY product_name ORDER BY order_year) AS previous_year_sales,
+    current_sales - LAG(current_sales) OVER (PARTITION BY product_name ORDER BY order_year) AS diff_sales_yearly,
+    CASE    WHEN current_sales - LAG(current_sales) OVER (PARTITION BY product_name ORDER BY order_year) > 0 THEN 'Increase'
+            WHEN current_sales - LAG(current_sales) OVER (PARTITION BY product_name ORDER BY order_year) < 0 THEN 'Decrease'
+            ELSE 'No changes'
+    END AS previous_year_sales_status
+FROM yearly_product_sales
+-- WHERE previous_year_sales IS NOT NULL 
+ORDER BY product_name, order_year
