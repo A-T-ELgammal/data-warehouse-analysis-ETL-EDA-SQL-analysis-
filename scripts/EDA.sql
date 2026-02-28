@@ -227,3 +227,23 @@ SELECT
 FROM yearly_product_sales
 -- WHERE previous_year_sales IS NOT NULL 
 ORDER BY product_name, order_year
+
+-- part to whole anlysis
+-- sales percentage per category
+WITH category_sales As
+(SELECT
+    pi.category,
+    SUM(sls.total_sales) AS t_sales
+FROM gold_layer.fact_sales_info AS sls
+LEFT JOIN gold_layer.dim_product_info AS pi
+ON sls.product_key = pi.product_key
+GROUP BY pi.category
+)
+
+SELECT
+category,
+t_sales,
+SUM(t_sales) OVER () AS overall_sales,
+CONCAT(ROUND(((t_sales / SUM(t_sales) OVER () ) * 100), 2), '%') AS sales_percentage
+FROM category_sales
+ORDER BY sales_percentage DESC
