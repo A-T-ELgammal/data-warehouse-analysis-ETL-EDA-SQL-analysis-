@@ -270,3 +270,33 @@ FROM gold_layer.dim_product_info
     COUNT (product_key) AS total_products
 FROM cost_segment
 GROUP BY cost_range
+
+-- segment customers for spending money 
+WITH spending_per_customer AS
+(
+SELECT
+    ci.customer_key,
+    -- MIN(sls.order_date) AS first_order,
+    -- MAX(sls.order_date) AS last_order,
+    EXTRACT(YEAR FROM AGE(MAX(sls.order_date), MIN(sls.order_date))) * 12 + 
+    EXTRACT(MONTH FROM AGE(MAX(sls.order_date), MIN(sls.order_date))) AS date_difference,
+    SUM(sls.total_sales) AS total_spendings 
+FROM gold_layer.fact_sales_info AS sls
+LEFT JOIN gold_layer.dim_customer_info AS ci
+ON sls.customer_key = ci.customer_key
+GROUP BY 
+        ci.customer_key
+        )
+
+SELECT 
+    customer_key,
+    total_spendings,
+    date_difference,
+    CASE 
+        WHEN date_difference <= 12 AND total_spendings > 5000 THEN 'VIP'
+        WHEN date_difference <= 12 AND total_spendings <= 5000 THEN 'Regular'
+        WHEN date_difference > 12 THEN 'New'
+    END AS customre_category
+FROM spending_per_customer
+
+
