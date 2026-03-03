@@ -246,4 +246,27 @@ t_sales,
 SUM(t_sales) OVER () AS overall_sales,
 CONCAT(ROUND(((t_sales / SUM(t_sales) OVER () ) * 100), 2), '%') AS sales_percentage
 FROM category_sales
-ORDER BY sales_percentage DESC
+ORDER BY sales_percentage DESC 
+
+--- data segmentation ---
+
+-- segment the cost range with the number of products
+WITH cost_segment AS 
+(SELECT
+    product_key,
+    product_name,
+    product_cost,
+    CASE 
+        WHEN product_cost < 100 THEN 'BELOW 100'
+        WHEN product_cost BETWEEN 100 AND 500 THEN '100-500'
+        WHEN product_cost BETWEEN 500 AND 1000 THEN '100-500'
+        WHEN product_cost > 1000 THEN 'ABOVE 1000'
+    END AS  cost_range
+        
+FROM gold_layer.dim_product_info
+)
+ SELECT 
+    cost_range,
+    COUNT (product_key) AS total_products
+FROM cost_segment
+GROUP BY cost_range
