@@ -288,15 +288,19 @@ GROUP BY
         ci.customer_key
         )
 
-SELECT 
-    customer_key,
-    total_spendings,
-    date_difference,
-    CASE 
-        WHEN date_difference <= 12 AND total_spendings > 5000 THEN 'VIP'
-        WHEN date_difference <= 12 AND total_spendings <= 5000 THEN 'Regular'
-        WHEN date_difference > 12 THEN 'New'
-    END AS customre_category
-FROM spending_per_customer
-
-
+SELECT
+    customer_category,
+    COUNT(customer_key) AS number_of_customer
+FROM
+    (SELECT 
+        customer_key,
+        total_spendings,
+        date_difference,
+        CASE 
+            WHEN date_difference >= 12 AND total_spendings > 5000 THEN 'VIP'
+            WHEN date_difference >= 12 AND total_spendings <= 5000 THEN 'Regular'
+            ELSE 'New'
+        END AS customer_category
+    FROM spending_per_customer
+    ) AS customer_segment
+GROUP BY customer_category
