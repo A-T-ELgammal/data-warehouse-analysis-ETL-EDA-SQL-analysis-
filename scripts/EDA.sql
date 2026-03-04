@@ -307,8 +307,8 @@ GROUP BY customer_category
 
 -----------------------------------------------------------------------------
 -- final report -- 
-DROP VIEW IF EXISTS gold_layer.final_report CASCADE; 
-CREATE VIEW gold_layer.final_report AS 
+DROP VIEW IF EXISTS gold_layer.final_report_customer CASCADE; 
+CREATE VIEW gold_layer.final_report_customer AS 
 
 WITH base_query AS 
 (
@@ -383,4 +383,87 @@ SELECT
     END AS average_monthly_spending
 FROM customer_aggregation
 
+-- test
 SELECT * FROM gold_layer.final_report;
+
+
+
+------------------------------------------------------------------------
+-- products final report -- 
+DROP VIEW IF EXISTS gold_layer.final_report_products CASCADE; 
+CREATE VIEW gold_layer.final_report_products AS 
+
+WITH product_base_query AS 
+(
+SELECT 
+    sls.order_number,
+    sls.order_date,
+    sls.customer_key,
+    sls.quantity,
+    sls.total_sales,
+    pi.product_key,
+    pi.product_name,
+    pi.category,
+    pi.sub_category,
+    pi.product_cost
+
+FROM gold_layer.fact_sales_info AS sls
+LEFT JOIN gold_layer.dim_product_info AS pi
+ON sls.product_key = pi.product_key
+WHERE order_date IS NOT NULL
+
+)
+,product_aggregation AS 
+(
+SELECT 
+	product_key,
+	product_name,
+    category,
+	sub_category,
+	product_cost,
+    EXTRACT(YEAR FROM AGE(MAX(order_date), MIN(order_date))) * 12 + 
+    EXTRACT(MONTH FROM AGE(MAX(order_date), MIN(order_date))) AS lifespan_months,
+    MAX(order_date) AS last_sale_date,
+    COUNT(DISTINCT order_number) AS total_orders,
+    COUNT(DISTINCT customer_key) AS total_customers,
+    SUM(total_sales) AS total_sales,
+    SUM(quantity) AS total_quantities,
+    ROUND(AVG(total_sales / NULLIF(quantity, 0)), 2) AS avg_selling_price
+
+FROM product_base_query
+GROUP BY 
+    product_key,
+	product_name,
+    category,
+	sub_category,
+	product_cost
+)
+
+
+SELECT 
+    product_key,
+    product_name,
+    category,
+    sub_category,
+    product_cost,
+    last_sale_date,
+    EXTRACT(MONTH FROM AGE (CURRENT_DATE, last_sale_date)) AS recency_sale_date_months,
+    CASE 
+        WHEN total_sales > 50000 THEN 'High-performer'
+        WHEN total_sales >= 10000 THEN 'Mid-performer'
+        ELSE 'Low-performer'
+    END AS product_segment,
+    lifespan_months,
+    total_orders,
+    total_sales,
+    total_quantities,
+    total_customers,
+    avg_selling_price,
+    CASE 
+        WHEN total_orders = 0 THEN 0
+        ELSE total_sales/ total_orders
+    END AS average_monthly_revenue
+FROM product_aggregation
+
+-- test
+SELECT * FROM gold_layer.final_report_products;
