@@ -304,3 +304,83 @@ FROM
     FROM spending_per_customer
     ) AS customer_segment
 GROUP BY customer_category
+
+-----------------------------------------------------------------------------
+-- final report -- 
+DROP VIEW IF EXISTS gold_layer.final_report CASCADE; 
+CREATE VIEW gold_layer.final_report AS 
+
+WITH base_query AS 
+(
+SELECT 
+    sls.order_number,
+    sls.product_key,
+    sls.total_sales,
+    sls.quantity,
+    sls.order_date,
+    ci.customer_key,
+    ci.customer_id,
+    CONCAT(ci.first_name, ' ', ci.last_name) AS customer_name,
+    EXTRACT(YEAR FROM AGE(CURRENT_DATE, ci.customer_birth_date)) AS customer_age,
+    ci.customer_birth_date
+FROM gold_layer.fact_sales_info AS sls
+LEFT JOIN gold_layer.dim_customer_info AS ci 
+ON sls.customer_key = ci.customer_key
+),
+
+customer_aggregation AS 
+(
+    SELECT 
+    customer_key,
+    customer_id,
+    customer_age,
+    customer_name,
+    COUNT (DISTINCT product_key) AS total_products,
+    COUNT(DISTINCT order_number) AS total_orders,
+    SUM(total_sales) AS total_sales,
+    SUM(quantity) AS total_quantities,
+    MAX(order_date) AS last_order_date,
+    EXTRACT(YEAR FROM AGE(MAX(order_date), MIN(order_date))) * 12 + 
+    EXTRACT(MONTH FROM AGE(MAX(order_date), MIN(order_date))) AS lifespan_months
+FROM base_query
+GROUP BY
+    customer_key,
+    customer_id,
+    customer_age,
+    customer_name
+    )
+
+SELECT 
+    customer_key,
+    customer_id,
+    customer_name,
+    customer_age,
+    CASE 
+        WHEN customer_age < 20 THEN 'Under 20'
+        WHEN customer_age > 20 AND customer_age < 30 THEN '20 - 30'
+        WHEN customer_age > 30 AND customer_age < 50 THEN '30 - 50'
+        ELSE 'Above 50'
+    END AS age_segment,
+    CASE 
+        WHEN lifespan_months >= 12 AND total_sales > 5000 THEN 'VIP'
+        WHEN lifespan_months >= 12 AND total_sales <= 5000 THEN 'Regular'
+        ELSE 'New'
+    END AS customer_category,
+    total_orders,
+    total_products,
+    total_sales,
+    CASE 
+        WHEN total_sales = 0 THEN 0
+        ELSE ROUND(total_sales / total_orders, 2)
+    END AS average_order_value,
+    total_quantities,
+    last_order_date,
+    EXTRACT(MONTH FROM AGE (CURRENT_DATE, last_order_date)) AS recency_order_date_months,
+    lifespan_months,
+    CASE 
+        WHEN lifespan_months = 0 THEN 0
+        ELSE ROUND(total_sales / lifespan_months, 2) 
+    END AS average_monthly_spending
+FROM customer_aggregation
+
+SELECT * FROM gold_layer.final_report;
