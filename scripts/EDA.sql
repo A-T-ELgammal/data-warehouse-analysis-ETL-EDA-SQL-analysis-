@@ -73,6 +73,7 @@ FROM gold_layer.fact_sales_info
 SELECT 
     customer_country, COUNT(8) AS total_customers
 FROM gold_layer.dim_customer_info
+WHERE customer_country IS NOT NULL
 GROUP BY customer_country
 ORDER BY customer_country ASC;
 
@@ -83,7 +84,14 @@ GROUP BY customer_gender;
 SELECT category, COUNT(product_key) AS total_products
 FROM gold_layer.dim_product_info
 WHERE category IS NOT NULL
-GROUP BY category;
+GROUP BY category
+ORDER BY total_products DESC;
+
+SELECT
+category, sub_category
+FROM gold_layer.dim_product_info
+WHERE category = 'Components'
+GROUP BY category, sub_category;
 
 SELECT category, ROUND(AVG(product_cost), 2) AS average_price
 FROM gold_layer.dim_product_info
@@ -109,15 +117,33 @@ ORDER BY total_revenue DESC;
 
 SELECT
     ci.customer_country AS country,
-    COUNT(sls.product_key) AS total_products
+    COUNT(sls.product_key) AS total_products_sold,
+    SUM(sls.total_sales) AS total_revenue
 FROM gold_layer.fact_sales_info AS sls
 LEFT JOIN gold_layer.dim_customer_info AS ci
 ON sls.customer_key = ci.customer_key
+WHERE ci.customer_country IS NOT NULL
 GROUP BY country
-ORDER BY total_products DESC;
+ORDER BY total_revenue DESC;
 
+SELECT
+    ci.customer_country,
+    pi.category,
+    COUNT(sls.product_key) AS total_product_sold
+FROM gold_layer.fact_sales_info AS sls
+LEFT JOIN gold_layer.dim_customer_info AS ci
+ON sls.customer_key = ci.customer_key
+LEFT JOIN gold_layer.dim_product_info AS pi
+ON sls.product_key = pi.product_key
+WHERE ci.customer_country IS NOT NULL 
+GROUP BY 
+   ci.customer_country,
+    pi.category
+ORDER BY total_product_sold DESC, ci.customer_country
+
+
+    
 -----------------------------------------------------------------------
-
 --------- ranking analysis-------------------------
 
 -- top 5 prouducts with highest revenue
@@ -134,14 +160,30 @@ ORDER BY total_revenue DESC
 -- for the worst- performing products 
 -- ORDER BY total_revenue ASC
 LIMIT 5;
+-- top 5 products by USA & AUS per category
+
+SELECT
+    ci.customer_country,
+    pi.product_name,
+    pi.category,
+    ROW_NUMBER() OVER (ORDER BY sls.total_sales DESC) AS product_sales_ranking
+FROM gold_layer.fact_sales_info AS sls
+LEFT JOIN gold_layer.dim_customer_info AS ci
+ON sls.customer_key = ci.customer_key
+LEFT JOIN gold_layer.dim_product_info AS pi
+ON sls.product_key = pi.product_key
+WHERE ci.customer_country IS NOT NULL AND 
+(ci.customer_country = 'USA' OR ci.customer_country = 'Australia')
+LIMIT 5;
+
 
 -- top 3 customers with fewest and most orders placed 
 SELECT
     ci.first_name,
     ci.last_name,
     sls.customer_key,
-    COUNT(DISTINCT sls.order_number) AS total_orders
-    -- ROW_NUMBER() OVER (ORDER BY COUNT(DISTINCT sls.order_number) ASC) AS ordered_placed_ranking
+    COUNT(DISTINCT sls.order_number) AS total_orders,
+    ROW_NUMBER() OVER (ORDER BY COUNT(DISTINCT sls.order_number) DESC) AS ordered_placed_ranking
 FROM gold_layer.fact_sales_info AS sls
 LEFT JOIN gold_layer.dim_customer_info AS ci
 ON sls.customer_key = ci.customer_key
@@ -149,8 +191,8 @@ GROUP BY
     ci.first_name,
     ci.last_name,
     sls.customer_key
-ORDER BY total_orders, first_name ASC -- fewest
--- ORDER BY total_orders DESC -- most
+-- ORDER BY total_orders, first_name ASC -- fewest
+ORDER BY ordered_placed_ranking ASC, total_orders DESC 
 LIMIT 3;
 
 ========================================================================================
@@ -165,6 +207,19 @@ WHERE total_sales IS NOT NULL
 ORDER BY order_date
 
 -- by year - total sales, total customers, total quantities
+
+SELECT 
+    EXTRACT(YEAR FROM order_date) AS order_year,
+    -- EXTRACT (MONTH FROM order_date) AS order_month,
+    COUNT(DISTINCT customer_key) AS customers,
+    SUM(quantity) AS total_quantities,
+    SUM (total_sales) AS total_sales
+FROM gold_layer.fact_sales_info
+WHERE total_sales IS NOT NULL AND EXTRACT(YEAR FROM order_date) IS NOT NULL
+GROUP BY  order_year 
+ORDER BY total_sales DESC, order_year 
+
+-- by year and months:-
 SELECT 
     EXTRACT(YEAR FROM order_date) AS order_year,
     EXTRACT (MONTH FROM order_date) AS order_month,
@@ -175,6 +230,7 @@ FROM gold_layer.fact_sales_info
 WHERE total_sales IS NOT NULL
 GROUP BY order_year, order_month
 ORDER BY order_year, order_month
+
 
 --------------------------
 -- cummulative analysis 
@@ -193,7 +249,24 @@ FROM
     GROUP BY order_month
     ORDER BY order_month
     ) AS monthly_total_sales
+GROUP BY order_month, total_sales
+ORDER BY running_total_sales DESC
 
+-- using CTE
+WITH monthly_sales AS (
+    SELECT 
+        EXTRACT(MONTH FROM order_date) AS order_month,
+        SUM(total_sales) AS monthly_sales_amount
+    FROM gold_layer.fact_sales_info
+    WHERE order_date IS NOT NULL
+    GROUP BY 1
+)
+SELECT 
+    order_month,
+    monthly_sales_amount,
+    SUM(monthly_sales_amount) OVER (ORDER BY order_month) AS running_total
+FROM monthly_sales
+ORDER BY order_month DESC;
 
 -----------------------------------
 
@@ -233,7 +306,7 @@ ORDER BY product_name, order_year
 WITH category_sales As
 (SELECT
     pi.category,
-    SUM(sls.total_sales) AS t_sales
+    SUM(sls.total_sales) AS total_sales
 FROM gold_layer.fact_sales_info AS sls
 LEFT JOIN gold_layer.dim_product_info AS pi
 ON sls.product_key = pi.product_key
@@ -242,9 +315,9 @@ GROUP BY pi.category
 
 SELECT
 category,
-t_sales,
-SUM(t_sales) OVER () AS overall_sales,
-CONCAT(ROUND(((t_sales / SUM(t_sales) OVER () ) * 100), 2), '%') AS sales_percentage
+total_sales,
+SUM(total_sales) OVER () AS overall_sales,
+CONCAT(ROUND(((total_sales / SUM(total_sales) OVER () ) * 100), 2), '%') AS sales_percentage
 FROM category_sales
 ORDER BY sales_percentage DESC 
 
@@ -305,6 +378,7 @@ FROM
     ) AS customer_segment
 GROUP BY customer_category
 
+-----------------------------------------------------------------------------
 -----------------------------------------------------------------------------
 -- final report -- 
 DROP VIEW IF EXISTS gold_layer.final_report_customer CASCADE; 
@@ -459,9 +533,15 @@ SELECT
     total_quantities,
     total_customers,
     avg_selling_price,
+    -- average order revenue (AOR)
     CASE 
         WHEN total_orders = 0 THEN 0
         ELSE total_sales/ total_orders
+    END AS average_order_revenue
+    -- average monthly revenue
+    CASE 
+        WHEN lifespan_months = 0 THEN total_sales
+        ELSE total_sales / lifespan_months
     END AS average_monthly_revenue
 FROM product_aggregation
 
